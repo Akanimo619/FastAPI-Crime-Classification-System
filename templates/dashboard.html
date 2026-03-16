@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>National Crime Intelligence Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="app-title">Crime Intelligence Dashboard</div>
+
+    <div class="top-actions">
+        <a href="/simulation">
+    <button class="primary-btn">Run Simulation</button>
+</a>
+        <a href="/logout">
+            <button class="logout-btn">Logout</button>
+        </a>
+    </div>
+</div>
+
+<div class="federal-header">
+    <img src="/static/images/coat_of_arms.png" class="coat-logo">
+    <div>
+        <h1>Federal Republic of Nigeria</h1>
+        <p>National Crime Intelligence & Risk Classification System</p>
+    </div>
+</div>
+
+<div class="container">
+
+    {% if notification %}
+    <div class="notification">
+         {{ notification }}
+    </div>
+    {% endif %}
+
+    
+    <div class="card">
+        <h2>Welcome, {{ user.username }}</h2>
+        <p><strong>Role:</strong> {{ user.role|capitalize }}</p>
+    </div>
+
+    
+    <div class="card">
+    <h2>Crime Risk Classification Engine</h2>
+
+    <form method="post" action="/predict">
+
+        
+        <label>State</label>
+        <select name="state" required>
+            <option value="" disabled selected>Select a State</option>
+            {% for state in all_states %}
+                <option value="{{ state }}">{{ state }}</option>
+            {% endfor %}
+        </select>
+
+        <br><br>
+
+        
+        <label>Terrorism</label>
+<input type="number" step="1" min="0" name="Terrorism" required>
+
+<label>Banditry</label>
+<input type="number" step="1" min="0" name="Banditry" required>
+
+<label>Murder</label>
+<input type="number" step="1" min="0" name="Murder" required>
+
+<label>Armed Robbery</label>
+<input type="number" step="1" min="0" name="Armed_Robbery" required>
+
+<label>Kidnapping</label>
+<input type="number" step="1" min="0" name="Kidnapping" required>
+
+<label>Other Crimes</label>
+<input type="number" step="1" min="0" name="Other" required>
+
+        <br><br>
+        <button type="submit">Generate Intelligence Risk Classification</button>
+    </form>
+
+    
+    {% if prediction is not none %}
+<hr>
+
+<h3>Risk Level: {{ risk_level }}</h3>
+<p><strong>Cluster:</strong> {{ prediction }}</p>
+
+<h4>Government-Level Recommendations</h4>
+<p>{{ recommended_action }}</p>
+
+{% endif %}
+</div>
+
+    
+    <div class="card">
+    <h2>Recent Intelligence Assessments</h2>
+
+    {% if history %}
+
+        <button onclick="exportTableToCSV()">Export as CSV</button>
+
+        <table id="intelligenceTable">
+            <tr>
+                <th>Date</th>
+                <th>State</th>
+                <th>Cluster</th>
+                <th>Risk Level</th>
+                <th>Recommendation</th>
+                <th>Terrorism</th>
+                <th>Banditry</th>
+                <th>Murder</th>
+                <th>Armed Robbery</th>
+                <th>Kidnapping</th>
+                <th>Other</th>
+            </tr>
+
+            {% for record in history %}
+            <tr>
+                <td>{{ record.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <td>{{ record.state }}</td>
+                <td>{{ record.cluster }}</td>
+
+                <td>
+                    {% if record.risk_level == "Low Risk" %}
+                        <span style="color:#22c55e;">{{ record.risk_level }}</span>
+                    {% elif record.risk_level == "Moderate Risk" %}
+                        <span style="color:#facc15;">{{ record.risk_level }}</span>
+                    {% elif record.risk_level == "High Risk" %}
+                        <span style="color:#f97316;">{{ record.risk_level }}</span>
+                    {% elif record.risk_level == "Extreme Risk" %}
+                        <span style="color:#ef4444;">{{ record.risk_level }}</span>
+                    {% else %}
+                        {{ record.risk_level }}
+                    {% endif %}
+                </td>
+
+                <td>{{ record.recommendation }}</td>
+
+                <td>{{ record.Terrorism }}</td>
+                <td>{{ record.Banditry }}</td>
+                <td>{{ record.Murder }}</td>
+                <td>{{ record.Armed_Robbery }}</td>
+                <td>{{ record.Kidnapping }}</td>
+                <td>{{ record.Other }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <form method="post" action="/clear-history">
+    <button class="danger-btn">Clear Intelligence Assessments</button>
+</form>
+
+
+    {% else %}
+        <p>No intelligence records available yet.</p>
+    {% endif %}
+</div>
+
+<script>
+function exportTableToCSV() {
+    let csv = [];
+    let rows = document.querySelectorAll("#intelligenceTable tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        let row = [], cols = rows[i].querySelectorAll("td, th");
+        for (let j = 0; j < cols.length; j++)
+            row.push(cols[j].innerText);
+        csv.push(row.join(","));
+    }
+
+    let csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+    let downloadLink = document.createElement("a");
+    downloadLink.download = "intelligence_assessments.csv";
+    downloadLink.href = window.URL.createObjectURL(csvFile);
+    downloadLink.click();
+}
+</script>
+
+   
+    <div class="card">
+        <a href="/analytics">
+            <button>Open National Analytics Center</button>
+        </a>
+
+        {% if user.role == "admin" %}
+        <a href="/admin">
+            <button>Open Federal Admin Control Center</button>
+        </a>
+        {% endif %}
+    </div>
+
+</div>
+
+{% include "footer.html" %}
+
+</body>
+</html>

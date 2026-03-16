@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>National Crime Classification System</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0"></script>
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="app-title">Crime Intelligence Dashboard</div>
+
+    <div class="top-actions">
+        <a href="/logout">
+            <button class="logout-btn">Logout</button>
+        </a>
+    </div>
+</div>
+<div class="container">
+
+    <h2 class="page-title">Federal Crime Cluster Classification</h2>
+
+    <div class="card">
+        <h3>Cluster Filter</h3>
+        <select id="clusterFilter">
+            <option value="all">All Clusters</option>
+            <option value="0">Cluster 0 - Moderate Risk</option>
+            <option value="1">Cluster 1 - Low Risk</option>
+            <option value="2">Cluster 2 - High Risk</option>
+            <option value="3">Cluster 3 - Extreme Risk</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <h3>Cluster Distribution Overview</h3>
+        <div style="height:350px;">
+            <canvas id="clusterChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="full-width-card">
+
+    <h3>Crime Severity Index</h3>
+
+    <div class="map-container">
+        <svg id="riskMap"></svg>
+        <div id="tooltip" class="tooltip"></div>
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h3>Cluster State Breakdown</h3>
+        <div id="clusterList"></div>
+    </div>
+
+    <br>
+    <a href="/dashboard"><button>Back to Dashboard</button></a>
+
+</div>
+
+<style>
+
+.full-width-card {
+    width: 96%;
+    margin: 30px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+
+.map-container {
+    position: relative;
+    width: 100%;
+    height: 500px;
+}
+
+#riskMap {
+    width: 100%;
+    height: 100%;
+    background: #f8fafc;
+}
+
+.tooltip {
+    position: absolute;
+    background: #111827;
+    color: white;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+    pointer-events: none;
+    display: none;
+}
+
+</style>
+
+<script>
+
+const analyticsData = JSON.parse('{{ analytics_data_json | safe }}');
+
+const clusterColors = {
+    0: "#facc15",
+    1: "#16a34a",
+    2: "#ea580c",
+    3: "#b91c1c"
+};
+
+function renderClusters(filter="all") {
+    const container = document.getElementById("clusterList");
+    container.innerHTML = "";
+
+    analyticsData.forEach(item => {
+        if (filter !== "all" && item.cluster != filter) return;
+
+        const section = document.createElement("div");
+        section.className = "cluster-box";
+        section.style.borderLeft = "6px solid " + clusterColors[item.cluster];
+
+        section.innerHTML = `
+            <h4 onclick="toggleStates(${item.cluster})">
+                Cluster ${item.cluster} - ${item.risk_level}
+                (${item.count} States)
+            </h4>
+            <ul id="states-${item.cluster}" style="display:none;">
+                ${item.states.map(s => `<li>${s}</li>`).join("")}
+            </ul>
+        `;
+        container.appendChild(section);
+    });
+}
+
+function toggleStates(cluster) {
+    const el = document.getElementById("states-" + cluster);
+    el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+document.getElementById("clusterFilter").addEventListener("change", function(){
+    const filter = this.value;
+
+    renderClusters(filter);
+
+    const filteredAnalytics = filter === "all"
+        ? analyticsData
+        : analyticsData.filter(d => d.cluster == filter);
+
+    createChart(filteredAnalytics);
+    renderMap(filter);
+});
+
+let clusterChart;
+
+function createChart(filteredData) {
+
+    const ctx = document.getElementById("clusterChart").getContext("2d");
+
+    if (clusterChart) clusterChart.destroy();
+
+    clusterChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: filteredData.map(d => {
+                if (d.cluster == 0) return "Moderate";
+                if (d.cluster == 1) return "Low";
+                if (d.cluster == 2) return "High";
+                if (d.cluster == 3) return "Extreme";
+            }),
+            datasets: [{
+                label: "Number of States",
+                data: filteredData.map(d => d.count),
+                backgroundColor: filteredData.map(d => clusterColors[d.cluster])
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        }
+    });
+}
+
+const svg = document.getElementById("riskMap");
+const tooltip = document.getElementById("tooltip");
+
+const boxWidth = 120;
+const boxHeight = 60;
+const gap = 15;
+
+function getAllStates() {
+
+    let allStates = [];
+
+    analyticsData.forEach(c => {
+
+        c.states.forEach(s => {
+
+            // Weighted Intelligence Score based on cluster
+            let score;
+
+            if (c.cluster == 1) score = 30;        // Low
+            else if (c.cluster == 0) score = 50;   // Moderate
+            else if (c.cluster == 2) score = 75;   // High
+            else if (c.cluster == 3) score = 95;   // Extreme
+            else score = 0;
+
+            allStates.push({
+                state: s,
+                cluster: c.cluster,
+                risk: c.risk_level,
+                score: score
+            });
+
+        });
+
+    });
+
+    return allStates;
+}
+
+
+let allStates = getAllStates();
+console.log(allStates[0]);
+
+function renderMap(filter="all") {
+
+    svg.innerHTML = "";
+
+    const svgWidth = svg.clientWidth;
+    const perRow = Math.max(1, Math.floor(svgWidth / (boxWidth + gap)));
+
+    let filteredStates = filter === "all"
+        ? allStates
+        : allStates.filter(s => s.cluster == filter);
+
+    filteredStates.forEach((item, index) => {
+
+        const col = index % perRow;
+        const row = Math.floor(index / perRow);
+
+        const x = 20 + col * (boxWidth + gap);
+        const y = 20 + row * (boxHeight + gap);
+
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", x);
+        rect.setAttribute("y", y);
+        rect.setAttribute("width", boxWidth);
+        rect.setAttribute("height", boxHeight);
+        rect.setAttribute("fill", clusterColors[item.cluster]);
+        rect.setAttribute("rx", 8);
+        rect.style.cursor = "pointer";
+
+        rect.addEventListener("mousemove", (e) => {
+            tooltip.style.display = "block";
+           const rectBounds = svg.getBoundingClientRect();
+
+tooltip.style.left = (e.clientX - rectBounds.left + 10) + "px";
+tooltip.style.top = (e.clientY - rectBounds.top - 20) + "px";
+            tooltip.innerHTML = `
+    <strong>${item.state}</strong><br>
+    Cluster: ${item.cluster}<br>
+    Risk Level: ${item.risk}<br>
+    Intelligence Score: ${item.score}
+`;
+        });
+
+
+        rect.addEventListener("mouseleave", () => {
+            tooltip.style.display = "none";
+        });
+
+        svg.appendChild(rect);
+
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", x + boxWidth / 2);
+        label.setAttribute("y", y + 35);
+        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("fill", "white");
+        label.setAttribute("font-size", "11");
+        label.textContent = item.state;
+
+        svg.appendChild(label);
+    });
+}
+
+window.addEventListener("load", function() {
+    renderClusters();
+    createChart(analyticsData);
+    renderMap();
+});
+
+</script>
+
+{% include "footer.html" %}
+
+</body>
+</html>

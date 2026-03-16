@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crime Simulation</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <div class="top-bar">
+    <div class="app-title">Crime Intelligence Dashboard</div>
+
+    <div class="top-actions">
+        <a href="/logout">
+            <button class="logout-btn">Logout</button>
+        </a>
+    </div>
+</div>
+
+
+<div class="federal-header">
+    <img src="/static/images/coat_of_arms.png" class="coat-logo">
+    <div>
+        <h1>Federal Republic of Nigeria</h1>
+        <p>National Crime Intelligence & Risk Simulation System</p>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Crime Risk Simulation Engine</h2>
+
+        <form method="post" action="/run-simulation">
+
+            
+            <label>Select State</label>
+            <select name="state" required>
+                <option value="" disabled selected>Select a State</option>
+                {% for state in all_states %}
+                    <option value="{{ state }}">{{ state }}</option>
+                {% endfor %}
+            </select>
+
+            <br><br>
+
+             
+        <label>Terrorism</label>
+<input type="number" step="1" min="0" name="Terrorism" required>
+
+<label>Banditry</label>
+<input type="number" step="1" min="0" name="Banditry" required>
+
+<label>Murder</label>
+<input type="number" step="1" min="0" name="Murder" required>
+
+<label>Armed Robbery</label>
+<input type="number" step="1" min="0" name="Armed_Robbery" required>
+
+<label>Kidnapping</label>
+<input type="number" step="1" min="0" name="Kidnapping" required>
+
+<label>Other Crimes</label>
+<input type="number" step="1" min="0" name="Other" required>
+
+        <br><br>
+            <button type="submit">Run Risk Simulation</button>
+        </form>
+
+{% if prediction is not none %}
+<div class="result-card">
+    <h3>Simulation Result</h3>
+
+    <p><strong>Cluster:</strong> {{ prediction }}</p>
+    <p><strong>Risk Level:</strong> {{ risk_level }}</p>
+    <p><strong>Recommended Action:</strong></p>
+
+    <div class="recommendation-box">
+        {{ recommended_action }}
+    </div>
+</div>
+{% endif %}
+
+        <br>
+        <a href="/dashboard">
+            <button>Back to Dashboard</button>
+        </a>
+    </div>
+
+</div>
+
+{% include "footer.html" %}
+
+</body>
+</html>

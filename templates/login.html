@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login | Crime Risk System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+
+<div class="federal-header">
+    <img src="/static/images/coat_of_arms.png" class="coat-logo">
+    <div>
+        <h1>Federal Republic of Nigeria</h1>
+        <p>National Crime Intelligence & Risk Simulation System</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Crime Risk Intelligence System</h2>
+        <h3>Login</h3>
+
+        {% if error %}
+            <p style="color:red;">{{ error }}</p>
+        {% endif %}
+
+        <form method="post" action="/login">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+
+        <p style="margin-top:15px;">
+    <a href="/reset-request">Forgot Password?</a>
+</p>
+    </div>
+</div>
+
+{% include "footer.html" %}
+
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Password</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+
+<div class="federal-header">
+    <img src="/static/images/coat_of_arms.png" class="coat-logo">
+    <div>
+        <h1>Federal Republic of Nigeria</h1>
+        <p>National Crime Intelligence & Risk Simulation System</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Password Reset</h2>
+
+        {% if error %}
+            <p style="color:red;">{{ error }}</p>
+        {% endif %}
+
+        {% if message %}
+        <p>Password reset link:</p>
+        <a href="{{ message.split('Reset link: ')[1] }}" target="_blank">
+            {{ message.split('Reset link: ')[1] }}
+        </a>
+        {% endif %}
+
+        <form method="post">
+            <input type="email" name="email" placeholder="Enter your email" required>
+            <button type="submit">Request Reset</button>
+        </form>
+
+        <a href="/">Back to Login</a>
+    </div>
+</div>
+
+{% include "footer.html" %}
+
+</body>
+</html>
