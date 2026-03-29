@@ -1,6 +1,10 @@
 import json
 import joblib
 import pandas as pd
+import os
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from fastapi import UploadFile
 from fastapi import FastAPI, Request, Form, Depends, status
 from fastapi import HTTPException
 from fastapi.responses import RedirectResponse
@@ -146,7 +150,7 @@ def logout():
 @app.get("/dashboard")
 def dashboard(
     request: Request,
-    msg: str = None,  # ✅ Capture optional message
+    msg: str = None,  
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -157,11 +161,11 @@ def dashboard(
         .all()
     )
 
-    # ✅ Load list of states from dataset
+    
     data = pd.read_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv")
     all_states = sorted(data["State"].unique().tolist())
 
-    # ✅ Notification logic (NEW)
+    
     notification = None
 
     if msg == "cleared":
@@ -192,6 +196,7 @@ def predict(
     Armed_Robbery: float = Form(...),
     Kidnapping: float = Form(...),
     Other: float = Form(...),
+    timeframe: str = Form(...),
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -200,7 +205,6 @@ def predict(
     data = pd.read_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv")
     all_states = sorted(data["State"].unique().tolist())
 
-    # Load prediction history
     history = (
         db.query(models.Prediction)
         .filter(models.Prediction.user_id == user.id)
@@ -221,6 +225,22 @@ def predict(
             }
         )
 
+    multiplier_map = {
+    "Daily": 365,
+    "Weekly": 52,
+    "Monthly": 12,
+    "Yearly": 1
+}
+
+    multiplier = multiplier_map.get(timeframe, 1)
+
+    Terrorism *= multiplier
+    Banditry *= multiplier
+    Murder *= multiplier
+    Armed_Robbery *= multiplier
+    Kidnapping *= multiplier
+    Other *= multiplier
+
     input_data = [[
         Terrorism,
         Banditry,
@@ -233,18 +253,18 @@ def predict(
     scaled_input = scaler.transform(input_data)
     cluster = int(kmeans_model.predict(scaled_input)[0])
 
-    if cluster == 0:
-        risk_level = "Moderate Risk"
-        recommended_action = "Increase surveillance and intelligence monitoring."
-    elif cluster == 1:
-        risk_level = "Low Risk"
-        recommended_action = "Maintain preventive security posture."
-    elif cluster == 2:
-        risk_level = "High Risk"
-        recommended_action = "Deploy rapid response tactical units."
-    else:
-        risk_level = "Extreme Risk"
-        recommended_action = "Activate national emergency security protocols."
+
+    risk_level = data[data["Cluster"] == cluster]["Risk_Level"].iloc[0]
+
+
+    recommendation_map = {
+    "Low Risk": "Maintain preventive security posture, community monitoring, and intelligence gathering.",
+    "Moderate Risk": "Increase surveillance operations and inter-agency coordination.",
+    "High Risk": "Deploy tactical response units and enhance intelligence operations.",
+    "Extreme Risk": "Activate national emergency response, military intervention, and federal oversight."
+}
+
+    recommended_action = recommendation_map.get(risk_level, "No action defined")
 
     
     new_prediction = models.Prediction(
@@ -286,6 +306,22 @@ def predict(
         }
     )
     
+
+@app.get("/simulation")
+def simulation_page(request: Request, user: models.User = Depends(get_current_user)):
+    data = pd.read_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv")
+    all_states = sorted(data["State"].unique().tolist())
+
+    return templates.TemplateResponse(
+        "simulation.html",
+        {
+            "request": request,
+            "user": user,
+            "all_states": all_states,
+            "prediction": None
+        }
+    )
+
 @app.post("/run-simulation")
 def run_simulation(
     request: Request,
@@ -296,6 +332,7 @@ def run_simulation(
     Armed_Robbery: float = Form(...),
     Kidnapping: float = Form(...),
     Other: float = Form(...),
+    timeframe: str = Form(...),
     user: models.User = Depends(get_current_user)
 ):
 
@@ -315,6 +352,22 @@ def run_simulation(
             }
         )
 
+    multiplier_map = {
+    "Daily": 365,
+    "Weekly": 52,
+    "Monthly": 12,
+    "Yearly": 1
+}
+
+    multiplier = multiplier_map.get(timeframe, 1)
+
+    Terrorism *= multiplier
+    Banditry *= multiplier
+    Murder *= multiplier
+    Armed_Robbery *= multiplier
+    Kidnapping *= multiplier
+    Other *= multiplier
+
     input_data = [[
         Terrorism,
         Banditry,
@@ -327,18 +380,17 @@ def run_simulation(
     scaled_input = scaler.transform(input_data)
     cluster = kmeans_model.predict(scaled_input)[0]
 
-    if cluster == 0:
-        risk_level = "Moderate Risk"
-        recommended_action = "Increase surveillance and intelligence monitoring."
-    elif cluster == 1:
-        risk_level = "Low Risk"
-        recommended_action = "Maintain preventive security posture."
-    elif cluster == 2:
-        risk_level = "High Risk"
-        recommended_action = "Deploy rapid response tactical units."
-    else:
-        risk_level = "Extreme Risk"
-        recommended_action = "Activate national emergency security protocols."
+    risk_level = data[data["Cluster"] == cluster]["Risk_Level"].iloc[0]
+
+
+    recommendation_map = {
+    "Low Risk": "Maintain preventive security posture, community monitoring, and intelligence gathering.",
+    "Moderate Risk": "Increase surveillance operations and inter-agency coordination.",
+    "High Risk": "Deploy tactical response units and enhance intelligence operations.",
+    "Extreme Risk": "Activate national emergency response, military intervention, and federal oversight."
+}
+
+    recommended_action = recommendation_map.get(risk_level, "No action defined")
 
     return templates.TemplateResponse(
         "simulation.html",
@@ -352,86 +404,7 @@ def run_simulation(
         }
     )
     
-    input_data = [[
-        Terrorism,
-        Banditry,
-        Murder,
-        Armed_Robbery,
-        Kidnapping,
-        Other
-    ]]
-
-    scaled_data = scaler.transform(input_data)
-    cluster = int(kmeans_model.predict(scaled_data)[0])
-
     
-    risk_level = {
-        0: "Moderate Risk",
-        1: "Low Risk",
-        2: "High Risk",
-        3: "Extreme Risk"
-    }.get(cluster, "Unknown")
-
-    
-    recommendation_map = {
-        1: "Maintain routine surveillance operations. Strengthen community policing, intelligence monitoring, and inter-agency communication.",
-        0: "Increase coordinated security patrols. Deploy targeted tactical response units and enhance intelligence gathering.",
-        2: "Deploy federal intervention task forces. Expand counter-terrorism operations and reinforce rapid response units.",
-        3: "Declare emergency security protocol. Mobilize military support, activate national crisis response strategy, and initiate federal security oversight."
-    }
-
-    recommended_action = recommendation_map.get(
-        cluster,
-        "No action defined"
-    )
-
-    
-    new_prediction = models.Prediction(
-        state=state,
-        Terrorism=Terrorism,
-        Banditry=Banditry,
-        Murder=Murder,
-        Armed_Robbery=Armed_Robbery,
-        Kidnapping=Kidnapping,
-        Other=Other,
-        cluster=cluster,
-        risk_level=risk_level,
-        recommendation=recommended_action,  
-        user_id=user.id
-    )
-
-    db.add(new_prediction)
-    db.commit()
-
-    
-    history = (
-        db.query(models.Prediction)
-        .filter(models.Prediction.user_id == user.id)
-        .order_by(models.Prediction.created_at.desc())
-        .all()
-    )
-
-    
-    return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
-            "user": user,
-
-            # For result display section
-            "prediction": {
-                "cluster": cluster,
-                "risk_level": risk_level,
-                "recommendation": recommended_action
-            },
-
-            # For table
-            "history": history,
-
-            "state": state
-        }
-    )
-
 
 
 @app.get("/analytics")
@@ -440,8 +413,8 @@ def analytics(request: Request, user: models.User = Depends(get_current_user)):
     data = pd.read_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv")
 
     risk_map = {
-        0: "Moderate Risk",
-        1: "Low Risk",
+        0: "Low Risk",
+        1: "Moderate Risk",
         2: "High Risk",
         3: "Extreme Risk"
     }
@@ -549,14 +522,107 @@ def delete_user(
 
     return RedirectResponse("/admin", status_code=302)
 
-
-@app.get("/simulation")
-def simulation(
+@app.post("/admin/upload-dataset")
+def upload_and_retrain(
     request: Request,
-    user: models.User = Depends(get_current_user)
+    file: UploadFile = Form(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
-    data = pd.read_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv")
-    all_states = sorted(data["State"].unique().tolist())
+
+    if current_user.role != "admin":
+        return RedirectResponse("/dashboard", status_code=302)
+
+    try:
+        
+        file_location = f"uploaded_{file.filename}"
+        with open(file_location, "wb") as f:
+            f.write(file.file.read())
+
+        
+        data = pd.read_csv(file_location)
+
+       
+        features = [
+            "Terrorism",
+            "Banditry",
+            "Murder",
+            "Armed_Robbery",
+            "Kidnapping",
+            "Other"
+        ]
+
+        data[features] = data[features].fillna(data[features].median())
+
+        X = data[features]
+
+        X_weighted = X.copy()
+
+        weights = {
+            "Terrorism": 2.0,
+            "Banditry": 1.5,
+            "Kidnapping": 1.4,
+            "Murder": 1.3,
+            "Armed_Robbery": 1.2,
+            "Other": 1.0
+        }
+
+        for col in features:
+            X_weighted[col] = X_weighted[col] * weights[col]
+
+
+        
+        new_scaler = StandardScaler()
+        X_scaled = new_scaler.fit_transform(X_weighted)
+
+        
+        new_kmeans = KMeans(n_clusters=4, random_state=42)
+        clusters = new_kmeans.fit_predict(X_scaled)
+
+        
+        data["Cluster"] = clusters
+
+        
+        cluster_summary = data.groupby("Cluster")[features].mean()
+
+        cluster_summary["Total"] = cluster_summary.sum(axis=1)
+
+        sorted_clusters = cluster_summary.sort_values(by="Total")
+
+        risk_labels = {
+           sorted_clusters.index[0]: "Low Risk",
+           sorted_clusters.index[1]: "Moderate Risk",
+           sorted_clusters.index[2]: "High Risk",
+           sorted_clusters.index[3]: "Extreme Risk"
+      }
+
+
+        data["Risk_Level"] = data["Cluster"].map(risk_labels)
+        
+        data.to_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv", index=False)
+        
+        joblib.dump(new_kmeans, "kmeans_model.pkl")
+        joblib.dump(new_scaler, "scaler.pkl")
+
+        global kmeans_model, scaler
+        kmeans_model = new_kmeans
+        scaler = new_scaler
+
+        return RedirectResponse("/admin", status_code=302)
+
+    except Exception as e:
+        return templates.TemplateResponse(
+            "admin_panel.html",
+            {
+                "request": request,
+                "users": db.query(models.User).all(),
+                "user": current_user,
+                "error": f"Upload failed: {str(e)}"
+            }
+        )
+
+        data = pd.read_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv")
+        all_states = sorted(data["State"].unique().tolist())
 
     features = [
         "Terrorism",

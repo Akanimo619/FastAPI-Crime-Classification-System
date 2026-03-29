@@ -1,4 +1,4 @@
-/* =============================== GLOBAL RESET ================================ */
+
 * {
     box-sizing: border-box;
 }
@@ -12,7 +12,7 @@ body {
     position: relative;
 }
 
-/* =============================== TOP GOVERNMENT STRIPE ================================ */
+
 body::before {
     content: "";
     display: block;
@@ -20,11 +20,7 @@ body::before {
     background: linear-gradient(to right, #0b3d91, #14532d);
 }
 
-/* Coat of arms watermark */
-/* Coat of arms full-page watermark */
-/* Coat of arms full-page watermark */
-/* Coat of arms full-page watermark */
-/* Full-page coat of arms background */
+
 body::after {
     content: "";
     position: fixed;
@@ -32,14 +28,14 @@ body::after {
     background-image: url("/static/images/coat_of_arms.png");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: cover;   /* makes image span full page */
+    background-size: cover;   
     opacity: 0.15;
     filter: grayscale(100%) brightness(0.75);
     pointer-events: none;
     z-index: 0;
 }
 
-/* =============================== NAVBAR (AUTO SAFE STYLE) ================================ */
+
 .navbar {
     background: #0b3d91;
     color: white;
@@ -58,7 +54,7 @@ body::after {
     text-decoration: underline;
 }
 
-/* =============================== MAIN CONTAINER ================================ */
+
 .container {
     width: 90%;
     max-width: 1100px;
@@ -66,7 +62,7 @@ body::after {
     padding: 20px;
 }
 
-/* =============================== AUTH PAGES (LOGIN / REGISTER) ================================ */
+
 .auth-container {
     display: flex;
     justify-content: center;
@@ -74,7 +70,7 @@ body::after {
     min-height: 70vh;
 }
 
-/* =============================== CARDS ================================ */
+
 .card {
     background: #f8fafc;
     padding: 40px;
@@ -89,21 +85,21 @@ body::after {
     z-index: 1;
 }
 
-/* =============================== HEADINGS ================================ */
+
 h1, h2, h3 {
     color: #0b3d91;
     margin-bottom: 20px;
     text-align: center;
 }
 
-/* =============================== FORM INPUTS ================================ */
+
 input {
     padding: 12px;
     margin-top: 12px;
     width: 100%;
     border-radius: 6px;
     border: 1px solid #d1d5db;
-    background: #f8fafc; /* Changed */
+    background: #f8fafc; 
     font-size: 14px;
     transition: 0.3s ease;
 }
@@ -114,7 +110,7 @@ input:focus {
     box-shadow: 0 0 0 2px rgba(11, 61, 145, 0.15);
 }
 
-/* =============================== BUTTONS (PROFESSIONAL STYLE) ================================ */
+
 button {
     padding: 12px;
     margin-top: 20px;
@@ -133,7 +129,7 @@ button:hover {
     background: #14532d;
 }
 
-/* Secondary button style */
+
 button.secondary {
     background: #e2e8f0;
     color: #1e293b;
@@ -143,12 +139,12 @@ button.secondary:hover {
     background: #cbd5e1;
 }
 
-/* =============================== DASHBOARD BUTTON LINKS ================================ */
+
 a button {
     margin-top: 12px;
 }
 
-/* =============================== TABLE FIX (PREDICTION HISTORY SAFE) ================================ */
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -171,14 +167,14 @@ tr:nth-child(even) {
     background: #eef2f7;
 }
 
-/* Prevent table overflow inside cards */
+
 .card table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
 }
 
-/* =============================== DIVIDERS ================================ */
+
 hr {
     border: none;
     height: 1px;
@@ -186,7 +182,7 @@ hr {
     margin: 25px 0;
 }
 
-/* =============================== ANALYTICS LEGEND (BOTTOM RIGHT) ================================ */
+
 .analytics-legend {
     position: absolute;
     bottom: 40px;
@@ -199,7 +195,7 @@ hr {
     font-size: 13px;
 }
 
-/* =============================== FOOTER ================================ */
+
 .footer {
     background: #0b3d91;
     color: white;
@@ -216,7 +212,7 @@ hr {
     opacity: 0.8;
 }
 
-/* =============================== RESPONSIVE ================================ */
+
 @media (max-width: 768px) {
 
     .container {
@@ -233,7 +229,7 @@ hr {
     }
 }
 
-/* =============================== DASHBOARD WIDTH ONLY ================================ */
+
 
 .dashboard-container {
     max-width: 1500px;
@@ -344,7 +340,7 @@ hr {
 }
 
 .dashboard-footer {
-    background: #111827;   /* same dark tone used in the dashboard top bar */
+    background: #111827;   
     color: white;
     text-align: center;
     padding: 14px 10px;
@@ -361,4 +357,21 @@ hr {
     font-size: 12px;
     opacity: 0.8;
     margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        width: 100%;
+        padding: 10px;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .top-bar, .federal-header {
+        flex-direction: column;
+        text-align: center;
+    }
 }
