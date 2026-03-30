@@ -2,6 +2,9 @@ import json
 import joblib
 import pandas as pd
 import os
+import io
+import csv
+from fastapi.responses import StreamingResponse
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from fastapi import UploadFile
@@ -154,7 +157,14 @@ def dashboard(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    history = (
+    if user.role == "admin":
+        history = (
+        db.query(models.Prediction)
+        .order_by(models.Prediction.created_at.desc())
+        .all()
+    )
+    else:
+        history = (
         db.query(models.Prediction)
         .filter(models.Prediction.user_id == user.id)
         .order_by(models.Prediction.created_at.desc())
@@ -205,7 +215,14 @@ def predict(
     data = pd.read_csv("NIGERIA_2023_CRIME_WITH_CLUSTERS.csv")
     all_states = sorted(data["State"].unique().tolist())
 
-    history = (
+    if user.role == "admin":
+        history = (
+        db.query(models.Prediction)
+        .order_by(models.Prediction.created_at.desc())
+        .all()
+    )
+    else:
+        history = (
         db.query(models.Prediction)
         .filter(models.Prediction.user_id == user.id)
         .order_by(models.Prediction.created_at.desc())
@@ -286,7 +303,14 @@ def predict(
     db.refresh(new_prediction)
 
     
-    history = (
+    if user.role == "admin":
+        history = (
+        db.query(models.Prediction)
+        .order_by(models.Prediction.created_at.desc())
+        .all()
+    )
+    else:
+        history = (
         db.query(models.Prediction)
         .filter(models.Prediction.user_id == user.id)
         .order_by(models.Prediction.created_at.desc())
@@ -403,7 +427,46 @@ def run_simulation(
             "all_states": all_states
         }
     )
-    
+
+
+@app.get("/export-csv")
+def export_csv(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header
+    writer.writerow([
+        "State", "Terrorism", "Banditry", "Murder",
+        "Armed_Robbery", "Kidnapping", "Other",
+        "Cluster", "Risk_Level", "Recommendation", "Date"
+    ])
+
+    # Role-based data
+    if user.role == "admin":
+        records = db.query(models.Prediction).all()
+    else:
+        records = db.query(models.Prediction).filter(
+            models.Prediction.user_id == user.id
+        ).all()
+
+    for r in records:
+        writer.writerow([
+            r.state, r.Terrorism, r.Banditry, r.Murder,
+            r.Armed_Robbery, r.Kidnapping, r.Other,
+            r.cluster, r.risk_level, r.recommendation,
+            r.created_at
+        ])
+
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=predictions.csv"}
+    )
     
 
 

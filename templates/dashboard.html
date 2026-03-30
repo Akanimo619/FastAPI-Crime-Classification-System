@@ -104,14 +104,28 @@
 
     
     <div class="card">
-    <h2>Recent Intelligence Assessments</h2>
+       <h2>Recent Intelligence Assessments</h2>
 
-    {% if history %}
+        {% if history %}
 
-        <button onclick="exportTableToCSV()">Export as CSV</button>
+          <div class="table-actions">
+
+            <button onclick="exportTableToCSV()">
+               Export Visible Table
+            </button>
+
+            {% if user.role == "admin" %}
+    <a href="/export-csv">
+            <button>Export All Records</button>
+        
+    </a>
+    {% endif %}
+
+</div>
 
         <table id="intelligenceTable">
             <tr>
+                <th>User</th>
                 <th>Date</th>
                 <th>State</th>
                 <th>Cluster</th>
@@ -127,6 +141,7 @@
 
             {% for record in history %}
             <tr>
+                <td>{{ record.user.username }}</td>
                 <td>{{ record.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
                 <td>{{ record.state }}</td>
                 <td>{{ record.cluster }}</td>
